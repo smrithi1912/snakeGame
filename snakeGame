@@ -1,0 +1,600 @@
+#include<iostream>
+#include<windows.h>
+#include<conio.h>
+
+int height=25;
+int width=100;
+
+int gameover=0,counter,gameover2=0,choice,counter2;
+int lflag=0,rflag=0,uflag=0,dflag=0;
+int lflag2=0,rflag2=0,uflag2=0,dflag2=0;
+short fcount;
+
+using namespace std;
+
+class Snake
+{
+
+	int x,y,fx,fy,x2,y2;
+	char playername[50],playername2[50];;
+
+	struct node
+	{
+		int nx,ny;
+		struct node *next;
+		struct node *back;
+	};
+
+	struct node *head=NULL;
+	struct node *head2=NULL;
+
+	void gotoxy(int x,int y)    //sets position of the cursor
+	{
+		COORD pos={x,y};    //specifies the new cursor position
+		SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE),pos);  //It gets a handle you can use to write to the console.
+		//SetConsoleCursorPosition then uses that handle and the coordinates you specified to place the blinking cursor in your command prompt.
+	}
+
+
+	void textcolour(int k)  //Assigns color
+	{
+		HANDLE hConsole=GetStdHandle(STD_OUTPUT_HANDLE);
+		SetConsoleTextAttribute(hConsole,k);
+	}
+
+	void nameandscore() //Displays the name of player along with the score
+	{
+		textcolour(6);  //yellow
+		gotoxy(101,2);
+		cout<<playername<<"'s SCORE = "<<counter*100;   //counter increases by 100 as soon the snake eats food
+		if(choice==2)       //in case of 2 player
+		{
+			gotoxy(101,4);
+			cout<<playername2<<"'s SCORE = "<<counter2*100;
+			gotoxy(101,6);
+			cout<<"Remained Food :";
+			gotoxy(117,6);
+			cout<<"  ";
+			gotoxy(117,6);
+			cout<<fcount;   //food count displayed
+		}
+	}
+
+	void box(int m1,int n1,int m2,int n2)   //the game is played in this box
+                                            //m1,m2,n1,n2 are the dimensions of the box
+	{
+        for(int i=m1;i<=m2;i++) //width
+		{
+			gotoxy(i,n1);
+			cout<<"//";
+			gotoxy(i,n2);
+			cout<<"//";
+		}
+
+		for(int i=n1;i<=n2;i++) //height
+		{
+			gotoxy(m1,i);
+			cout<<"//";
+			gotoxy(m2,i);
+			cout<<"//";
+		}
+	}
+
+	void generatefruit()
+	{
+			label1:
+			fx=rand()%width;
+			if(fx==0||fx==width)
+
+                goto label1;
+
+			label2:
+			fy=rand()%height;
+			if(fy==0||fy==height)
+
+                goto label2;
+	}
+
+	void checkfcount()
+	{
+		if(fcount==0)
+		{
+			gameover=1;
+			gameover2=1;
+		}
+	}
+
+
+	void welcome()
+	{
+		textcolour(5);  //purple
+		box(width/2-width/4, height/2-height/4, width/2+width/4, height/2+height/4);    //form a boundary of purple
+		textcolour(10); //light green
+		gotoxy(width/2-20,height/2-10); //assigning the coordinates for text
+		cout<<"* WELCOME TO SNAKE GAME * ";
+		textcolour(9);  //light blue
+		gotoxy(width/2-16,height/2-3);  //assigning coordinates for text
+		cout<<"Press 1 For Single player \n";
+		gotoxy(width/2-16,height/2-1);
+		cout<<"Press 2 For Multiplayer \n";
+		gotoxy(width/2-16,height/2);
+		cin>>choice;
+		system("cls");  //clear screen
+	}
+
+
+	void game1()
+	{
+		char ch;
+		welcome1();
+		do{
+			setup();
+			window();
+			while(!gameover)
+			{
+				draw();
+				play();
+				run();
+				checkup();
+			}
+			ch=end();
+			}while(ch=='y'||ch=='Y');
+	}
+
+	void game2()
+	{
+		char ch;
+		welcome2();
+		do{
+
+			setup2();
+			setup();
+			window();
+		while(gameover!=1&&gameover2!=1)
+			{
+				draw();
+				play();
+				run();
+				checkup();
+				checkup2();
+			}ch=end();
+		}while(ch=='y'||ch=='Y');
+	}
+
+	void welcome1()
+	{
+		textcolour(5);  //purple
+		box(width/2-width/4,height/2-height/4,width/2+width/4,height/2+height/4);  //creating a box
+		textcolour(6);  //yellow
+		gotoxy(width/2-18,height/2-3);  //assigning coordinates
+		cout<<"WELCOME TO SNAKE GAME SINGLE PLAYER MODE ";
+		textcolour(8);  //gray
+		gotoxy(width/2-13,height/2);    //assigning coordinates
+		cout<<"Enter Your Name : ";
+		cin>>playername;
+		system("cls");  //clear screen
+	}
+
+	void welcome2()
+	{
+		textcolour(5);
+		box(width/2-width/4,height/2-height/4,width/2+width/4,height/2+height/4);
+		textcolour(6);
+		gotoxy(width/2-18,height/2-3);
+		cout<<"WELCOME TO SNAKE GAME MULTIPLAYER MODE ";
+		textcolour(8);
+		gotoxy(width/2-13,height/2);
+		cout<<"Enter Player1 Name : ";
+		gotoxy(width/2-13,height/2+2);
+		cout<<"Enter Player2 Name : ";
+		gotoxy(width/2+7,height/2);
+		cin>>playername;
+		gotoxy(width/2+7,height/2+2);
+		cin>>playername2;
+		system("cls");
+	}
+
+	public:
+
+	void setup()
+	{
+		counter=0;
+		gameover=0;
+		window();
+		resetflag();
+		nameandscore();
+		head= new node;
+		head->nx=width/2;       //?
+		head->ny=height/2;      //?
+		head->next=NULL;
+		head->back=NULL;
+		x=width/2;
+		y=height/2;
+		label1: //food
+		fx=rand()%width;
+		if(fx==0||fx==width)  //food should not be on the borders -width
+		goto label1;
+
+		label2:
+		fy=rand()%height;
+		if(fy==0||fy==height)   //similar condition for height
+		goto label2;
+	}
+
+	void setup2()
+	{
+		resetflag2();
+		gameover2=0;
+		counter2=0;
+		fcount=25;
+		head2=new node;
+		head2->nx=width/2+5;    //?
+		head2->ny=height/2+5;
+		head2->next=NULL;
+		head2->back=NULL;
+		x2=width/2;   //?
+		y2=height/2+5;
+
+	}
+
+    void window()   //box in which the game is played
+	{
+		if(choice==1)
+            textcolour(4);  //red background box if 1 player
+		else
+        textcolour(1);  //blue background if 2 players
+        for(int i=0;i<=width;i++)
+        {
+            gotoxy(i,0);
+            cout<<"Û";
+            gotoxy(i,height);
+            cout<<"Û";
+        }
+
+		for(int i=0;i<=height;i++)
+		{
+			gotoxy(0,i);
+			cout<<"Û";
+			gotoxy(width,i);
+			cout<<"Û";
+		}
+	}
+
+	void drawlist(struct node *h,int k)
+	{
+		textcolour(k);
+		struct node *ptr;
+		ptr=h;
+		while(ptr!=NULL)
+		{
+			gotoxy(ptr->nx,ptr->ny);
+			cout<<"Û";
+			ptr=ptr->next;
+		}
+	}
+
+
+	void destroylist(struct node *h)
+	{
+		struct node *ptr;
+		ptr=h;
+		while(ptr!=NULL)
+		{
+			gotoxy(ptr->nx,ptr->ny);
+			cout<<" ";
+			ptr=ptr->next;
+		}
+	}
+
+
+	void draw() //food description
+	{
+
+		drawlist(head,4);
+		drawlist(head2,5);
+		gotoxy(fx,fy);
+		textcolour(4);  //red
+		cout<<"*";
+		Sleep(100);  //execution suspended for specific period of time
+                     //speed of snake
+		destroylist(head);
+		destroylist(head2);
+	}
+
+	void resetflag()
+	{
+		uflag=0;
+		dflag=0;
+		lflag=0;
+		rflag=0;
+	}
+
+    void resetflag2()
+	{
+		uflag2=0;
+		dflag2=0;
+		lflag2=0;
+		rflag2=0;
+	}
+
+
+    void play()
+	{
+		int h;
+		char ch;
+		if(kbhit()) //kbhit - determine if a key is pressed or not
+		{
+
+			ch=getch();
+			h=ch;
+			switch(h)   //identifying which key is being pressed
+                        // snake is not allowed to backtrack so opposite pairs together
+			{
+				case 72:if(dflag!=1){resetflag();uflag=1;}  //H - up
+				break;
+				case 80:if(uflag!=1){resetflag();dflag=1;}  //P
+				break;
+				case 75:if(rflag!=1){resetflag();lflag=1;}  //K
+				break;
+				case 77:if(lflag!=1){resetflag();rflag=1;}  //M
+				break;
+
+				case 119:if(dflag2!=1){resetflag2();uflag2=1;}  //s
+				break;
+				case 115:if(uflag2!=1){resetflag2();dflag2=1;}  //
+				break;
+				case 97:if(rflag2!=1){resetflag2();lflag2=1;}   //a
+				break;
+				case 100:if(lflag2!=1){resetflag2();rflag2=1;}  //d
+				break;
+
+				default:break;
+			}
+		}
+	}
+
+	void run()
+	{
+		if(uflag==1)
+		y--;
+		else if(dflag==1)
+		y++;
+		else if(lflag==1)
+		x--;
+		else if(rflag==1)
+		x++;
+
+
+			if(uflag2==1)
+		y2--;
+		else if(dflag2==1)
+		y2++;
+		else if(lflag2==1)
+		x2--;
+		else if(rflag2==1)
+		x2++;
+
+	}
+
+
+	void dolist(struct node *h,int pp,int qq)   //h- head ,
+	{
+		struct node *ptr,*prev;
+		ptr=h;
+		prev=h;
+
+		while(ptr->next!=NULL)  //traversing sname length
+		{
+			prev=ptr;
+			ptr=ptr->next;      //ptr - tail , prev-tail-1
+		}
+		while(prev!=h)  //?
+		{
+			ptr->nx=prev->nx;
+			ptr->ny=prev->ny;
+			prev=prev->back;
+			ptr=ptr->back;
+		}
+		ptr->nx=prev->nx;
+		ptr->ny=prev->ny;
+		prev->nx=pp;
+		prev->ny=qq;
+	}
+
+	void drawagain()    //
+	{
+		if(x==width)    //hits right border
+		{
+			x=1;
+		}
+		if(x==0)    //left border
+		{
+			x=width-1;
+		}
+		if(y==0)    //top border
+		{
+			y=height-1;
+		}
+		if(y==height)   //bottom border
+		{
+			y=1;
+		}
+	}
+
+
+	void drawagain2()
+	{
+		if(x2==width)
+		{
+			x2=1;
+		}
+		if(x2==0)
+		{
+			x2=width-1;
+		}
+		if(y2==0)
+		{
+			y2=height-1;
+		}
+		if(y2==height)
+		{
+			y2=1;
+		}
+	}
+
+	void checkup()
+	{
+		if(choice==1)   //snake hits boundary
+		{
+			if(x==width||x==0)
+			gameover=1;
+			if(y==height||y==0)
+			gameover=1;
+		}
+		drawagain();
+
+		struct node *h;
+		h=head->next;
+		while(h!=NULL)
+		{
+			if(x==h->nx&&y==h->ny)  //snake hits itself
+			{
+				gameover=1;
+				break;
+			}
+			h=h->next;
+		}
+    //condition for multiplayer
+		if(x==fx&&y==fy)    //if snake lands on food
+		{
+			if(choice==2)
+			{
+				fcount--;
+				checkfcount();
+			}
+			struct node *t,*ptr,*prev;
+			t=new node;
+			t->next=NULL;
+			t->back=NULL;
+				ptr=head;
+				prev=head;
+				while(ptr->next!=NULL)  //tail of snake
+				{
+					ptr=ptr->next;
+				}
+				ptr->next=t;
+				t->back=ptr;    //tail of snake
+				generatefruit();
+			counter++;
+			nameandscore();
+        }
+        dolist(head,x,y);
+    }
+
+
+    void checkup2()
+	{
+		drawagain2();
+		struct node *h;
+		h=head2->next;
+		while(h!=NULL)
+		{
+			if(x2==h->nx&&y2==h->ny)
+			{
+				gameover2=1;
+				break;
+			}
+			h=h->next;
+		}
+
+		if(x2==fx&&y2==fy)
+		{
+			fcount--;
+			checkfcount();
+			struct node *t,*ptr,*prev;
+			t=new node;
+			t->next=NULL;
+			t->back=NULL;
+				ptr=head2;
+				prev=head2;
+				while(ptr->next!=NULL)
+				{
+					ptr=ptr->next;
+				}
+				ptr->next=t;
+				t->back=ptr;
+				generatefruit();
+				counter2++;
+				nameandscore();
+		}
+			dolist(head2,x2,y2);
+		}
+
+
+
+	char end()
+	{
+		char c;
+		gotoxy(width/2-5,height/2-4);
+		cout<<"GAME OVER \n";
+		textcolour(5);
+		box(width/2-width/4,height/2-height/4,width/2+width/4,height/2+height/4);
+
+		textcolour(1);
+		gotoxy(width/2-15,height/2-2);
+		cout<<playername<<" You Scored : "<<counter*100;
+		if(choice==2)
+		{
+			gotoxy(width/2-15,height/2);
+			cout<<playername2<<" You Scored : "<<counter2*100;
+			textcolour(4);
+			if(gameover!=0)
+			{
+				gotoxy(width/2-15,height/2+2);
+				cout<<playername<<" has lost !";
+			}
+			else
+			{
+				gotoxy(width/2-15,height/2+2);
+				cout<<playername2 <<" has lost !";
+			}
+			if(fcount==0)
+			{
+				textcolour(4);
+				gotoxy(width/2-15,height/2+2);
+				if(counter>counter2)
+				{
+					cout<<playername<<" has WON !";
+				}
+				else
+				{
+					cout<<playername2<<" has WON !";
+				}
+			}
+		}
+		textcolour(6);
+		gotoxy(width/2-15,height/2+4);
+		cout<<"Want To Play Again ? (Y/N) : ";
+		cin>>c;
+		system("cls");
+		return c;
+
+	}
+
+
+};
+
+int main()
+{
+	Snake s;    //class Snake
+	s.welcome();
+	if(choice==1)
+	{
+		s.game1();
+	}
+	if(choice==2)
+	{
+		s.game2();
+	}
+	system("exit");
+}
